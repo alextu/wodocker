@@ -29,3 +29,6 @@ RUN echo "<Location /apps/WebObjects> \n\
 RUN mv apache.conf /usr/local/apache2/conf/webobjects.conf
 RUN echo "Include /usr/local/apache2/conf/webobjects.conf" >> /usr/local/apache2/conf/httpd.conf
 RUN apt-get purge -y --auto-remove $buildDeps
+
+# hack to replace wotaskd hosts by the ones provided 
+CMD sed -ri "s#WebObjectsConfig http://localhost:1085 10#WebObjectsConfig $WOTASKD_HOSTS 10#g" /usr/local/apache2/conf/webobjects.conf && httpd-foreground
