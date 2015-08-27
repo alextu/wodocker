@@ -1,6 +1,7 @@
 FROM httpd:2.4
+MAINTAINER Alexis Tual
 
-# Installation 
+# Compilation and installation of adaptor
 ENV buildDeps 'curl unzip gcc make libc6-dev libpcre++-dev apache2-dev'
 
 RUN  set -x \
@@ -17,7 +18,9 @@ RUN sed -ri 's/ADAPTORS = CGI Apache2.2/ADAPTORS = Apache2.4/g' make.config
 RUN make
 WORKDIR /tmp/wonder-master/Utilities/Adaptors/Apache2.4
 RUN mv mod_WebObjects.so /usr/local/apache2/modules/.
-RUN sed -ri 's#WebObjectsAlias /cgi-bin/WebObjects#WebObjectsAlias /apps/WebObjects#g' apache.conf
+RUN mkdir /usr/local/apache2/htdocs/WebObjects && \
+    sed -ri 's#WebObjectsAlias /cgi-bin/WebObjects#WebObjectsAlias /apps/WebObjects#g' apache.conf && \
+    sed -ri 's#WebObjectsDocumentRoot LOCAL_LIBRARY_DIR/WebServer/Documents#WebObjectsDocumentRoot /usr/local/apache2/htdocs/WebObjects#g' apache.conf
 RUN echo "<Location /apps/WebObjects> \n\
     Require all granted \n \
 </Location>\n \
@@ -27,7 +30,7 @@ RUN echo "<Location /apps/WebObjects> \n\
 
 RUN mv apache.conf /usr/local/apache2/conf/webobjects.conf
 RUN echo "Include /usr/local/apache2/conf/webobjects.conf" >> /usr/local/apache2/conf/httpd.conf
-RUN apt-get purge -y --auto-remove $buildDeps
+RUN rm /tmp/master.zip && rm -Rf /tmp/wonder-master 
 
 # Installation of java
 ENV JAVA_VERSION_MAJOR 8
@@ -50,22 +53,29 @@ RUN echo "===> clean up..."  && \
     apt-get clean  && \
     rm -rf /var/lib/apt/lists/*
 
-#ENV JAVA_HOME /usr/lib/jvm/java-8-oracle
-
 # Installation of wotaskd and javamonitor
-ENV NEXT_ROOT /tmp
 RUN mkdir -p /woapps
+ENV NEXT_ROOT /opt
 WORKDIR /woapps
 RUN curl -O https://jenkins.wocommunity.org/job/Wonder/lastSuccessfulBuild/artifact/Root/Roots/JavaMonitor.tar.gz
 RUN tar xzf JavaMonitor.tar.gz && rm JavaMonitor.tar.gz
-EXPOSE 56789
 RUN curl -O https://jenkins.wocommunity.org/job/Wonder/lastSuccessfulBuild/artifact/Root/Roots/wotaskd.tar.gz
 RUN tar xzf wotaskd.tar.gz && rm wotaskd.tar.gz
-EXPOSE 1085
+COPY launchwo.sh /woapps/launchwo.sh
+RUN chmod +x /woapps/launchwo.sh
 
-#
-#CMD /woapps/wotaskd.woa/wotaskd
-#RUN /woapps/JavaMonitor.woa/JavaMonitor -WOPort 56789
+# Cleanup
+RUN apt-get purge -y --auto-remove $buildDeps
+
+# Logs
+RUN mkdir /var/log/webobjects
+
+# Config
+VOLUME ["/var/log/webobjects", "/opt/Local/Library/WebObjects/Configuration", "/woapps", "/usr/local/apache2/htdocs/WebObjects"]
+
+EXPOSE 80 1085 56789
+
+CMD ["/woapps/launchwo.sh"]
 
 
 
