@@ -2,35 +2,33 @@ FROM httpd:2.4
 MAINTAINER Alexis Tual
 
 # Compilation and installation of adaptor
-ENV buildDeps 'curl unzip gcc make libc6-dev libpcre++-dev apache2-dev'
-
+ENV buildDeps 'unzip gcc make libc6-dev libpcre++-dev apache2-dev'
 RUN  set -x \
   && apt-get update \
-  && apt-get install -y --no-install-recommends $buildDeps \
-  && rm -r /var/lib/apt/lists/*
-
-WORKDIR /tmp
-RUN curl -LOk https://github.com/wocommunity/wonder/archive/master.zip
-RUN unzip master.zip
-WORKDIR /tmp/wonder-master/Utilities/Adaptors
-RUN sed -ri 's/ADAPTOR_OS = MACOS/ADAPTOR_OS = LINUX/g' make.config
-RUN sed -ri 's/ADAPTORS = CGI Apache2.2/ADAPTORS = Apache2.4/g' make.config
-RUN make
-WORKDIR /tmp/wonder-master/Utilities/Adaptors/Apache2.4
-RUN mv mod_WebObjects.so /usr/local/apache2/modules/.
-RUN mkdir /usr/local/apache2/htdocs/WebObjects && \
-    sed -ri 's#WebObjectsAlias /cgi-bin/WebObjects#WebObjectsAlias /apps/WebObjects#g' apache.conf && \
-    sed -ri 's#WebObjectsDocumentRoot LOCAL_LIBRARY_DIR/WebServer/Documents#WebObjectsDocumentRoot /usr/local/apache2/htdocs/WebObjects#g' apache.conf
-RUN echo "<Location /apps/WebObjects> \n\
+  && apt-get install -y --no-install-recommends curl $buildDeps \
+  && rm -r /var/lib/apt/lists/* \
+  && cd /tmp \
+  && curl -LOk https://github.com/wocommunity/wonder/archive/master.zip \
+  && unzip master.zip \
+  && cd /tmp/wonder-master/Utilities/Adaptors \
+  && sed -ri 's/ADAPTOR_OS = MACOS/ADAPTOR_OS = LINUX/g' make.config \
+  && sed -ri 's/ADAPTORS = CGI Apache2.2/ADAPTORS = Apache2.4/g' make.config \
+  && make \
+  && cd /tmp/wonder-master/Utilities/Adaptors/Apache2.4 \
+  && mv mod_WebObjects.so /usr/local/apache2/modules/. \ 
+  && mkdir /usr/local/apache2/htdocs/WebObjects \
+  && sed -ri 's#WebObjectsAlias /cgi-bin/WebObjects#WebObjectsAlias /apps/WebObjects#g' apache.conf \
+  && sed -ri 's#WebObjectsDocumentRoot LOCAL_LIBRARY_DIR/WebServer/Documents#WebObjectsDocumentRoot /usr/local/apache2/htdocs/WebObjects#g' apache.conf \
+  && echo "<Location /apps/WebObjects> \n\
     Require all granted \n \
 </Location>\n \
 <Location /WebObjects>\n \
     Require all granted\n \
-</Location>" >> apache.conf
-
-RUN mv apache.conf /usr/local/apache2/conf/webobjects.conf
-RUN echo "Include /usr/local/apache2/conf/webobjects.conf" >> /usr/local/apache2/conf/httpd.conf
-RUN rm /tmp/master.zip && rm -Rf /tmp/wonder-master 
+</Location>" >> apache.conf \
+  && mv apache.conf /usr/local/apache2/conf/webobjects.conf \
+  && echo "Include /usr/local/apache2/conf/webobjects.conf" >> /usr/local/apache2/conf/httpd.conf \
+  && rm /tmp/master.zip && rm -Rf /tmp/wonder-master \
+  && apt-get purge -y --auto-remove $buildDeps 
 
 # Installation of java
 ENV JAVA_VERSION_MAJOR 8
@@ -54,21 +52,17 @@ RUN echo "===> clean up..."  && \
     rm -rf /var/lib/apt/lists/*
 
 # Installation of wotaskd and javamonitor
-RUN mkdir -p /woapps
 ENV NEXT_ROOT /opt
-WORKDIR /woapps
-RUN curl -O https://jenkins.wocommunity.org/job/Wonder/lastSuccessfulBuild/artifact/Root/Roots/JavaMonitor.tar.gz
-RUN tar xzf JavaMonitor.tar.gz && rm JavaMonitor.tar.gz
-RUN curl -O https://jenkins.wocommunity.org/job/Wonder/lastSuccessfulBuild/artifact/Root/Roots/wotaskd.tar.gz
-RUN tar xzf wotaskd.tar.gz && rm wotaskd.tar.gz
+RUN  mkdir -p /woapps \
+  && cd /woapps \
+  && curl -O https://jenkins.wocommunity.org/job/Wonder/lastSuccessfulBuild/artifact/Root/Roots/JavaMonitor.tar.gz  \
+  && tar xzf JavaMonitor.tar.gz && rm JavaMonitor.tar.gz  \
+  && curl -O https://jenkins.wocommunity.org/job/Wonder/lastSuccessfulBuild/artifact/Root/Roots/wotaskd.tar.gz  \
+  && tar xzf wotaskd.tar.gz && rm wotaskd.tar.gz  \
+  && mkdir /var/log/webobjects 
+
 COPY launchwo.sh /woapps/launchwo.sh
 RUN chmod +x /woapps/launchwo.sh
-
-# Cleanup
-RUN apt-get purge -y --auto-remove $buildDeps
-
-# Logs
-RUN mkdir /var/log/webobjects
 
 # Config
 VOLUME ["/var/log/webobjects", "/opt/Local/Library/WebObjects/Configuration", "/woapps", "/usr/local/apache2/htdocs/WebObjects"]

@@ -20,7 +20,7 @@ Or Homebrew.
 
 # Command line
 
-`docker run -ti --rm -p 80:80 -p 56789:56789 -v $HOME/wodocker/apps:/mywoapps -v $HOME/wodocker/conf:/opt/Local/Library/WebObjects/Configuration -v $HOME/wodocker/htdocs:/usr/local/apache2/htdocs/WebObjects -v $HOME/wodocker/logs:/var/log/WebObjects wofull`
+`docker run -ti --rm -p 80:80 -p 56789:56789 -v $HOME/wodocker/apps:/mywoapps -v $HOME/wodocker/conf:/opt/Local/Library/WebObjects/Configuration -v $HOME/wodocker/htdocs:/usr/local/apache2/htdocs/WebObjects -v $HOME/wodocker/logs:/var/log/WebObjects alextu/wofull`
 
 Okay the command line is quite large due to volume sharing :
 Create a wodocker directory in your $HOME
