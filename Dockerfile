@@ -2,20 +2,20 @@ FROM httpd:2.4
 MAINTAINER Alexis Tual
 
 # Compilation and installation of adaptor
-ENV buildDeps 'unzip gcc make libc6-dev libpcre++-dev apache2-dev'
+ENV buildDeps unzip gcc make libc6-dev libpcre++-dev apache2-dev
 RUN  set -x \
   && apt-get update \
-  && apt-get install -y --no-install-recommends curl $buildDeps \
+  && apt-get install --yes --no-install-recommends curl $buildDeps \
   && rm -r /var/lib/apt/lists/* \
   && cd /tmp \
-  && curl -LOk https://github.com/wocommunity/wonder/archive/master.zip \
-  && unzip master.zip \
+  && curl -LOk https://github.com/wocommunity/wonder/archive/master.tar.gz \
+  && tar xfz master.tar.gz \
   && cd /tmp/wonder-master/Utilities/Adaptors \
   && sed -ri 's/ADAPTOR_OS = MACOS/ADAPTOR_OS = LINUX/g' make.config \
   && sed -ri 's/ADAPTORS = CGI Apache2.2/ADAPTORS = Apache2.4/g' make.config \
   && make \
   && cd /tmp/wonder-master/Utilities/Adaptors/Apache2.4 \
-  && mv mod_WebObjects.so /usr/local/apache2/modules/. \ 
+  && mv mod_WebObjects.so /usr/local/apache2/modules/. \
   && mkdir /usr/local/apache2/htdocs/WebObjects \
   && sed -ri 's#WebObjectsAlias /cgi-bin/WebObjects#WebObjectsAlias /apps/WebObjects#g' apache.conf \
   && sed -ri 's#WebObjectsDocumentRoot LOCAL_LIBRARY_DIR/WebServer/Documents#WebObjectsDocumentRoot /usr/local/apache2/htdocs/WebObjects#g' apache.conf \
@@ -27,8 +27,8 @@ RUN  set -x \
 </Location>" >> apache.conf \
   && mv apache.conf /usr/local/apache2/conf/webobjects.conf \
   && echo "Include /usr/local/apache2/conf/webobjects.conf" >> /usr/local/apache2/conf/httpd.conf \
-  && rm /tmp/master.zip && rm -Rf /tmp/wonder-master \
-  && apt-get purge -y --auto-remove $buildDeps 
+  && rm /tmp/master.tar.gz && rm -Rf /tmp/wonder-master \
+  && apt-get purge -y --auto-remove $buildDeps
 
 # Installation of java
 ENV JAVA_VERSION_MAJOR 8
@@ -59,7 +59,7 @@ RUN  mkdir -p /woapps \
   && tar xzf JavaMonitor.tar.gz && rm JavaMonitor.tar.gz  \
   && curl -O https://jenkins.wocommunity.org/job/Wonder/lastSuccessfulBuild/artifact/Root/Roots/wotaskd.tar.gz  \
   && tar xzf wotaskd.tar.gz && rm wotaskd.tar.gz  \
-  && mkdir /var/log/webobjects 
+  && mkdir /var/log/webobjects
 
 COPY launchwo.sh /woapps/launchwo.sh
 RUN chmod +x /woapps/launchwo.sh
@@ -70,8 +70,4 @@ VOLUME ["/var/log/webobjects", "/opt/Local/Library/WebObjects/Configuration", "/
 EXPOSE 80 1085 56789
 
 CMD ["/woapps/launchwo.sh"]
-
-
-
-
 
