@@ -2,7 +2,7 @@ FROM httpd:2.4
 MAINTAINER Alexis Tual
 
 # Compilation and installation of adaptor
-ENV buildDeps unzip gcc make libc6-dev libpcre++-dev apache2-dev
+ENV buildDeps gcc make libc6-dev libpcre++-dev apache2-dev
 RUN  set -x \
   && apt-get update \
   && apt-get install --yes --no-install-recommends curl $buildDeps \
